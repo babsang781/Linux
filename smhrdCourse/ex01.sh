@@ -489,3 +489,100 @@ scp ~/.ssh/authorized_keys worker03:~/.ssh/authorized_keys
 scp ~/.ssh/config worker01:~/.ssh/config
 scp ~/.ssh/config worker02:~/.ssh/config
 scp ~/.ssh/config worker03:~/.ssh/config
+
+--2022.03.25
+
+// 앞으로 주로 쓸 명령어들을 함수로 만들어 놓은 파일
+nano .bashrc 
+
+-- 입력할 function
+
+function otherpis {
+  grep "worker" /etc/hosts | awk '{print $2}' | grep -v $(hostname)
+}
+
+function clustercmd {
+  for pi in $(otherpis); do ssh $pi "$@"; done
+  $@
+}
+
+function clusterreboot {
+  clustercmd sudo shutdown -r now
+}
+
+function clustershutdown {
+  clustercmd sudo shutdown now
+}
+
+function clusterscp {
+  for pi in $(otherpis); do
+    cat $1 | ssh $pi "sudo tee $1" > /dev/null 2>&1
+  done
+}
+
+--완료
+
+source .bashrc
+otherpis
+
+-- worker01, 02 둘 다 해주고, 
+
+-- namenode 에서 실행 : 압축 풀기
+sudo tar -xvf hadoop-3.3.1.tar.gz -C /opt/
+
+-- 환경 설정 해줘야 함
+hadoop@namenode:~ $ cd /opt
+hadoop@namenode:/opt $ ls
+hadoop-3.3.1
+
+-- 하둡 확인 - 이름 바꾸기 - 권한 변경
+hadoop@namenode:/opt $ sudo mv hadoop-3.3.1
+mv: missing destination file operand after 'hadoop-3.3.1'
+Try 'mv --help' for more information.
+hadoop@namenode:/opt $ sudo mv hadoop-3.3.1 hadoop
+hadoop@namenode:/opt $ ls
+hadoop
+hadoop@namenode:/opt $ ls al
+ls: cannot access 'al': No such file or directory
+hadoop@namenode:/opt $ ls -al
+total 12
+drwxr-xr-x  3 root root 4096 Jan 28 07:40 .
+drwxr-xr-x 18 root root 4096 Jan 28 03:15 ..
+drwxr-xr-x 10 pi   pi   4096 Jun 15  2021 hadoop
+
+
+hadoop@namenode:/opt $ sudo chown hadoop:hadoop -R /opt/hadoop
+hadoop@namenode:/opt $ ls -al
+total 12
+drwxr-xr-x  3 root   root   4096 Jan 28 07:40 .
+drwxr-xr-x 18 root   root   4096 Jan 28 03:15 ..
+drwxr-xr-x 10 hadoop hadoop 4096 Jun 15  2021 hadoop
+
+D:\VirtualBox VMs
+
+192.168.56.101
+192.168.56.102
+192.168.56.103
+
+--가장 기본인 텍스트 마이닝: 분류 기능 실습
+
+라즈베리 파이- 자바 안 되어서 vm 설치하고 실행함
+
+
+filezilla 로 bigdata에 파일을 올리고, 
+bigdata vm 접속한 putty 에서 아래를 실행
+
+hdfs dfs -put holmes.txt /tmp
+
+hdfs dfs -ls /tmp
+
+맵리듀스 : 취합하는 작업
+
+ yarn jar wordcount-0.0.1-SNAPSHOT.jar bigdata.WordCount /tmp/holmes.txt /wcout
+ 
+ hdfs dhs -cat /wcout/part-r-00000
+
+
+-- 하둡 웹 브라우저 페이지
+http://192.168.56.101:9870/
+
